@@ -19,8 +19,8 @@ gui = tk.Tk()
 gui.withdraw()
 # Select working directory
 print('\nSelect where to create project...')
+gui.update()
 working_directory = fd.askdirectory()
-gui.destroy()
 
 # CHOOSE PROJECT NAME
 print('\nName your project:')
