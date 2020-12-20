@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Importing TKinter
 # File dialog functionality
 import Tkinter as tk
@@ -7,6 +8,14 @@ import tkFileDialog as fd
 import os
 import platform
 import subprocess
+
+
+class textstyle:
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    END = '\033[0m'
+
+
 # CODE TEMPLATES
 #
 # HTML
@@ -188,20 +197,17 @@ working_directory = fd.askdirectory()
 
 # CHOOSE PROJECT NAME
 print('\nName your project:')
-project_name = raw_input()
-print("\nDirectory:\n" + os.path.join(working_directory, project_name))
+project_name = raw_input(textstyle.BOLD)
+print(textstyle.END)
+print(
+    "Directory:\n" +
+    os.path.join(
+        working_directory, textstyle.BOLD + project_name + textstyle.END
+        )
+    )
 
-# Directories to create
-#
-# /Project folder
-#   /css
-#   /js
-#   /img
+# Create project folder
 os.mkdir(os.path.join(working_directory, project_name))
-os.mkdir(os.path.join(working_directory, project_name, 'css'))
-os.mkdir(os.path.join(working_directory, project_name, 'js'))
-os.mkdir(os.path.join(working_directory, project_name, 'img'))
-
 # Changes OS working directory
 os.chdir(os.path.join(working_directory, project_name))
 
@@ -211,6 +217,7 @@ def createFiles(type):
     if type == "static":
         # Static website
         print("Creating a Static website...")
+        print(textstyle.BOLD + "index.html" + textstyle.END)
         html = open("index.html", "w")
         html_code = (
             html_header +
@@ -222,9 +229,12 @@ def createFiles(type):
         # Dynamic website
         # Choose to include functions.php file
         php_functions = raw_input(
-            "\nDo you want to include a functions.php file in your website?"
+            "\nDo you want to include a " + textstyle.RED + "functions.php" +
+            textstyle.END + " file in your website?"
             "\n"
-            "(y/n):")
+            "(" + textstyle.BOLD + "y" + textstyle.END + "/" +
+            textstyle.BOLD + "n" + textstyle.END + "):"
+            )
 
         while php_functions != "y" or php_functions != "n":
             if php_functions == "y" or php_functions == "n":
@@ -232,10 +242,13 @@ def createFiles(type):
             else:
                 php_functions = raw_input(
                     "Please answer y (yes) or n (no)\n"
-                    "(y/n):")
+                    "(" + textstyle.BOLD + "y" + textstyle.END + "/" +
+                    textstyle.BOLD + "n" + textstyle.END + "):"
+                    )
 
         print("\nCreating a Dynamic website...")
         # index.php
+        print(textstyle.BOLD + "index.php")
         php_index = open("index.php", "w")
         php_index.write("""<?php include 'header.php';
 
@@ -243,10 +256,12 @@ def createFiles(type):
         """ + html_main + "\n<?php include \
         'footer.php'; ?>")
         # header.php
+        print("header.php")
         php_header = open("header.php", "w")
 
         if php_functions == "y":
             # Create functions.php
+            print("functions.php")
             php_functions = open("functions.php", "w")
             php_header.write(
                 "<?php include 'functions.php'; ?>" + "\n")
@@ -254,33 +269,49 @@ def createFiles(type):
         php_header.write("\n" + html_header)
         php_header.close()
         # footer.php
+        print("footer.php")
         php_footer = open("footer.php", "w")
         php_footer.write(html_footer)
 
-    if type == "static" or "dynamic":
-        # JS files
-        javascript_main = open(os.path.join("js", "main.js"), "w")
-        javascript_main.close()
-        javascript_functions = open(os.path.join("js", "functions.js"), "w")
-        javascript_functions.close()
-        # CSS files
-        css = open(os.path.join("css", "style.css"), "w")
-        css.write(css_code)
-        css.close()
+    # Create folders
+    #
+    # /css
+    # /js
+    # /img
+    os.mkdir(os.path.join(working_directory, project_name, 'css'))
+    print("mkdir css")
+    os.mkdir(os.path.join(working_directory, project_name, 'js'))
+    print("mkdir js")
+    os.mkdir(os.path.join(working_directory, project_name, 'img'))
+    print("mkdir img")
+    # JS files
+    print("main.js")
+    javascript_main = open(os.path.join("js", "main.js"), "w")
+    javascript_main.close()
+    print("function.js")
+    javascript_functions = open(os.path.join("js", "functions.js"), "w")
+    javascript_functions.close()
+    # CSS files
+    print("style.css" + textstyle.END)
+    css = open(os.path.join("css", "style.css"), "w")
+    css.write(css_code)
+    css.close()
+    print("...Done!\n")
 
-        print("...Done!")
-
-        # Opens created project folder
-        if "Windows" in platform:
-            os.startfile(os.getcwd())
-        elif "Darwin" in platform:
-            subprocess.Popen(["open", os.getcwd()])
+    # Opens created project folder
+    if "Windows" in platform:
+        os.startfile(os.getcwd())
+    elif "Darwin" in platform:
+        subprocess.Popen(["open", os.getcwd()])
 
 
 # CHOOSE TYPE OF WEBSITE
-print("\nChoose between a Static or Dynamic website:")
-print("[ 1 ]\tStatic (html)")
-print("[ 2 ]\tDynamic (php)")
+print(
+    "\nChoose between a " + textstyle.RED + "Static" + textstyle.END + " or " +
+    textstyle.RED + "Dynamic" + textstyle.END + " website:"
+    )
+print("[" + textstyle.BOLD + "1" + textstyle.END + "]\tStatic (html)")
+print("[" + textstyle.BOLD + "2" + textstyle.END + "]\tDynamic (php)")
 
 website_type = None
 
