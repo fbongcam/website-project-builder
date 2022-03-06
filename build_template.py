@@ -8,6 +8,7 @@ import tkFileDialog as fd
 import os
 import platform
 import subprocess
+import sys
 
 
 class textstyle:
@@ -196,6 +197,10 @@ print('(A new directory will be'),
 print('created with your project name in next step)')
 gui.update()
 working_directory = fd.askdirectory()
+
+# ABORT OPERATION IF NO PATH SELECTED
+if working_directory == '':
+    sys.exit('No path provided.')
 
 # CHOOSE PROJECT NAME
 print('\nName your project:')
