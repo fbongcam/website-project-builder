@@ -33,7 +33,7 @@ html_header = """<!DOCTYPE html>
   <title>WEBSITE TITLE</title>
 
   <link rel="stylesheet" """ + \
-  """type="text/css" title="style" href="style.css">
+  """type="text/css" title="style" href="css/style.css">
 </head>
 <body>
 
@@ -192,6 +192,8 @@ gui = tk.Tk()
 gui.withdraw()
 # Select working directory
 print('\nSelect where to create project...')
+print('(A new directory will be'),
+print('created with your project name in next step)')
 gui.update()
 working_directory = fd.askdirectory()
 
