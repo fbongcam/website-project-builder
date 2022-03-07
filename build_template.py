@@ -183,6 +183,11 @@ footer {
 
 """
 
+# SETTINGS
+scss = False
+website_type = None
+bootstrap = False
+
 # GET Platform (win, unix)
 platform = platform.system()
 
@@ -202,9 +207,16 @@ working_directory = fd.askdirectory()
 if working_directory == '':
     sys.exit('No path provided.')
 
+# Clear window
+os.system('cls' if os.name == 'nt' else 'clear')
+
 # CHOOSE PROJECT NAME
 print('\nName your project:')
 project_name = raw_input(textstyle.BOLD)
+while os.path.exists(os.path.join(working_directory, project_name)):
+    print(textstyle.END + "\nPath already exists.\n")
+    project_name = raw_input(textstyle.BOLD)
+
 print(textstyle.END)
 print(
     "Directory:\n" +
@@ -220,11 +232,13 @@ os.chdir(os.path.join(working_directory, project_name))
 
 
 # Create files
-def createFiles(type):
+def createFiles(type, scss):
+    # Clear terminal
     if type == "static":
+        os.system('cls' if os.name == 'nt' else 'clear')
         # Static website
-        print("Creating a Static website...")
-        print(textstyle.BOLD + "index.html" + textstyle.END)
+        print("\nCreating a Static website...")
+        print(textstyle.BOLD + "index.html")
         html = open("index.html", "w")
         html_code = (
             html_header +
@@ -252,7 +266,7 @@ def createFiles(type):
                     "(" + textstyle.BOLD + "y" + textstyle.END + "/" +
                     textstyle.BOLD + "n" + textstyle.END + "):"
                     )
-
+        os.system('cls' if os.name == 'nt' else 'clear')
         print("\nCreating a Dynamic website...")
         # index.php
         print(textstyle.BOLD + "index.php")
@@ -294,15 +308,29 @@ def createFiles(type):
     # JS files
     print("main.js")
     javascript_main = open(os.path.join("js", "main.js"), "w")
+    javascript_main.write("/*\n\tmain.js\n\t@author AUTHOR GOES HERE\n*/")
     javascript_main.close()
     print("function.js")
     javascript_functions = open(os.path.join("js", "functions.js"), "w")
+    javascript_functions.write(
+        "/*\n\tfunctions.js\n\t@author AUTHOR GOES HERE\n*/")
     javascript_functions.close()
-    # CSS files
-    print("style.css" + textstyle.END)
-    css = open(os.path.join("css", "style.css"), "w")
-    css.write(css_code)
-    css.close()
+
+    if scss is True:
+        # SCSS files
+        print("style.scss")
+        scss = open(os.path.join("css", "style.scss"), "w")
+        scss.write("@import 'variables.scss'")
+        scss.close()
+        print("variables.scss" + textstyle.END)
+        scss = open(os.path.join("css", "variables.scss"), "w")
+        scss.close()
+    else:
+        # CSS files
+        print("style.css" + textstyle.END)
+        css = open(os.path.join("css", "style.css"), "w")
+        css.write(css_code)
+        css.close()
     print("...Done!\n")
 
     # Opens created project folder
@@ -320,14 +348,29 @@ print(
 print("[" + textstyle.BOLD + "1" + textstyle.END + "]\tStatic (html)")
 print("[" + textstyle.BOLD + "2" + textstyle.END + "]\tDynamic (php)")
 
-website_type = None
-
 while website_type != "1" or website_type != "2":
     website_type = raw_input("\n(type 1 or 2):\t")
+    if website_type == "1" or website_type == "2":
+        break
 
-    if website_type == "1":
-        createFiles("static")
+print(
+    "\nWill you use " + textstyle.RED + "SASS" + textstyle.END
+    + " in your project?"
+    )
+
+while scss != "y" or scss != "n":
+    scss_input = raw_input(
+        "(" + textstyle.BOLD + "y" + textstyle.END + "/" +
+        textstyle.BOLD + "n" + textstyle.END + "):"
+    )
+    if scss_input == "y":
+        scss = True
         break
-    elif website_type == "2":
-        createFiles("dynamic")
+    if scss_input == "n":
         break
+
+if website_type == "1":
+    createFiles("static", scss)
+
+if website_type == "2":
+    createFiles("dynamic", scss)
