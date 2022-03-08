@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 # Importing TKinter
 # File dialog functionality
 import Tkinter as tk
@@ -9,6 +10,9 @@ import os
 import platform
 import subprocess
 import sys
+from zipfile import ZipFile
+import imp
+import shutil
 
 
 class textstyle:
@@ -183,6 +187,7 @@ footer {
 
 """
 
+
 # SETTINGS
 scss = False
 website_type = None
@@ -232,7 +237,7 @@ os.chdir(os.path.join(working_directory, project_name))
 
 
 # Create files
-def createFiles(type, scss):
+def createFiles(type, scss, bootstrap):
     # Clear terminal
     if type == "static":
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -316,7 +321,7 @@ def createFiles(type, scss):
         "/*\n\tfunctions.js\n\t@author AUTHOR GOES HERE\n*/")
     javascript_functions.close()
 
-    if scss is True:
+    if scss:
         # SCSS files
         print("style.scss")
         scss = open(os.path.join("css", "style.scss"), "w")
@@ -331,8 +336,155 @@ def createFiles(type, scss):
         css = open(os.path.join("css", "style.css"), "w")
         css.write(css_code)
         css.close()
-    print("...Done!\n")
 
+    if bootstrap is True:
+        file = None
+        if type == 'static':
+            file = open(os.path.join("index.html"), "r+")
+        if type == 'dynamic':
+            file = open(os.path.join("header.php"), "r+")
+        textlines = file.readlines()
+        file.seek(0)
+        file.truncate()
+        # Add bootstrap CDNs
+        for i in range(len(textlines)):
+            if not scss:
+                if 'link rel="stylesheet"' in textlines[i]:
+                    textlines[i] = (
+                        '<link href="https://cdn.jsdelivr.net/npm/bootstrap' +
+                        '@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"' +
+                        'integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT' +
+                        '94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="ano' +
+                        'nymous">\n' + textlines[i]
+                    )
+            if (type == 'static' and
+                    '<script src="js/functions.js">' in textlines[i]):
+                textlines[i] = (
+                    '<script src="https://cdn.jsdelivr.net/npm/bootstrap' +
+                    '@5.1.3/dist/js/bootstrap.bundle.min.js"' +
+                    ' integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+' +
+                    'OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"' +
+                    ' crossorigin="anonymous"></script>\n' + textlines[i])
+        # Write lines
+        for elem in textlines:
+            file.write(str(elem))
+        file.close()
+        if type == 'dynamic':
+            file = open(os.path.join('footer.php'), "r+")
+            textlines = file.readlines()
+            file.seek(0)
+            file.truncate()
+            for i in range(len(textlines)):
+                if '<script src="js/functions.js">' in textlines[i]:
+                    textlines[i] = (
+                        '<script ' +
+                        'src="https://cdn.jsdelivr.net/npm/bootstrap' +
+                        '@5.1.3/dist/js/bootstrap.bundle.min.js"' +
+                        ' integrity="sha384-ka7Sk0Gln' +
+                        '4gmtz2MlQnikT1wXgYsOg+' +
+                        'OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"' +
+                        ' crossorigin="anonymous"></script>\n'
+                        + textlines[i])
+            for elem in textlines:
+                file.write(str(elem))
+            file.close()
+        if scss:
+            non_standard_modules = ['requests']
+
+            # Check non standard modules
+            for module in non_standard_modules:
+                try:
+                    if imp.find_module(module):
+                        __import__(
+                            module, globals(), locals(), fromlist=[], level=-1)
+                except ImportError:
+                    print("\nMissing module\t" + module)
+                    print(
+                        "\nDownloading "
+                        + textstyle.BOLD + module + textstyle.END + "...")
+                    subprocess.call(
+                        "python -m pip install " + module, shell=True)
+                    __import__(
+                        module, globals(), locals(), fromlist=[], level=-1)
+
+            bootstrap_url = (
+                "https://api.github.com/repos/twbs/bootstrap/releases/latest"
+                )
+            request = sys.modules['requests'].get(bootstrap_url)
+            json = request.json()
+            source_code_url = json["zipball_url"]
+            file = (
+                sys.modules['requests'].get(
+                        source_code_url, stream=True, timeout=5
+                    )
+                )
+            fileSize = file.headers['content-length']
+
+            # Download and Write file
+            filename = 'bootstrap_source.zip'
+            with open(filename, 'wb') as f:
+                data = 0
+                for chunk in file.iter_content(chunk_size=1024*10):
+                    print(
+                            textstyle.BOLD +
+                            '\nFetching bootstrap:\t' +
+                            textstyle.END + str(data) +
+                            '/' + str(fileSize) + ' bytes', end='\r'
+                        )
+                    f.write(chunk)
+                    data += 1024*10
+            # Extract SCSS files
+            print("\nExtracting...")
+            filePath = None
+            ZipFile(filename).extractall('css')
+            # Delete archive
+            print("Cleaning up")
+            # Change working directory to CSS folder
+            os.chdir(os.path.join('css'))
+            filesInCSS = os.listdir('.')
+            for file in filesInCSS:
+                if 'bootstrap' in file:
+                    # Rename folder
+                    os.rename(file, 'bootstrap')
+            # Enter bootstrap dir
+            os.chdir(os.path.join('bootstrap'))
+            filesInBootstrap = os.listdir('.')
+            # Remove all files except .scss
+            for file in filesInBootstrap:
+                if file != 'scss':
+                    if os.path.isdir(file):
+                        shutil.rmtree(file)
+                    else:
+                        os.remove(file)
+            # Move SCSS files
+            destination = os.path.abspath('.')
+            os.chdir(os.path.join('scss'))
+            source = os.path.abspath('.')
+            for file in os.listdir('.'):
+                shutil.move(source + '/' + file, destination + '/' + file)
+            os.chdir(os.path.join('../'))
+            shutil.rmtree('scss')
+            # GO BACK TO MAIN FOLDER
+            os.chdir(os.path.join(working_directory, project_name))
+            # REMOVE BOOTSTRAP ARCHIVE
+            os.remove(filename)
+            # ADD IMPORTS TO SCSS (BOOTSTRAP)
+            file = open(os.path.join("css/style.scss"), "r+")
+            textlines = file.readlines()
+            file.seek(0)
+            file.truncate()
+            # FIND '@import'
+            for i in range(len(textlines)):
+                if '@import' in textlines[i]:
+                    textlines[i] = (
+                        '@import \'bootstrap/bootstrap\';\n' +
+                        textlines[i]
+                    )
+            # Write lines
+            for elem in textlines:
+                file.write(elem)
+            file.close()
+    print("Done!\n")
     # Opens created project folder
     if "Windows" in platform:
         os.startfile(os.getcwd())
@@ -358,10 +510,10 @@ print(
     + " in your project?"
     )
 
-while scss != "y" or scss != "n":
+while True:
     scss_input = raw_input(
         "(" + textstyle.BOLD + "y" + textstyle.END + "/" +
-        textstyle.BOLD + "n" + textstyle.END + "):"
+        textstyle.BOLD + "n" + textstyle.END + ")?\t"
     )
     if scss_input == "y":
         scss = True
@@ -369,8 +521,24 @@ while scss != "y" or scss != "n":
     if scss_input == "n":
         break
 
+print(
+    "\nInclude " + textstyle.RED + "Bootstrap" + textstyle.END
+    + "?"
+    )
+
+while True:
+    bootstrap_input = raw_input(
+        "(" + textstyle.BOLD + "y" + textstyle.END + "/" +
+        textstyle.BOLD + "n" + textstyle.END + ")?\t"
+    )
+    if bootstrap_input == "y":
+        bootstrap = True
+        break
+    if bootstrap_input == "n":
+        break
+
 if website_type == "1":
-    createFiles("static", scss)
+    createFiles("static", scss, bootstrap)
 
 if website_type == "2":
-    createFiles("dynamic", scss)
+    createFiles("dynamic", scss, bootstrap)
