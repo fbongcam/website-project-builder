@@ -1,4 +1,4 @@
-# website-template-builder
+# Website Project Builder
 Python script to build a static or dynamic website file structure.
 
 When starting a new website project, this script will help you create the basic files and insert the base code required to start your project.
