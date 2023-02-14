@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 
-
-# Importing TKinter
-# File dialog functionality
 import tkinter as tk
-import tkinter.filedialog as fd
-# Importing OS Module
+from tkinter import filedialog as fd
 import os
 import platform
 import subprocess
 import sys
 from zipfile import ZipFile
-import imp
+import importlib as imp
 import shutil
 
 
@@ -20,6 +16,8 @@ class textstyle:
     BOLD = '\033[1m'
     END = '\033[0m'
 
+
+project_name = None
 
 # CODE TEMPLATES
 #
@@ -35,7 +33,7 @@ html_header = """<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="WEBSITE DESCRIPTION!">
 
-  <title>WEBSITE TITLE</title>
+  <title>{}</title>
 
   <link rel="stylesheet" """ + \
   """type="text/css" title="style" href="css/style.css">
@@ -187,6 +185,123 @@ footer {
 
 """
 
+scss_code = """@import '_variables.scss';
+@import '_mixins.scss';
+
+html, body {
+
+}
+
+html {
+
+    body {
+
+    }
+
+}
+
+h1, h2, h3, h4, h5, h6 {
+
+}
+
+h1 {
+
+}
+
+h2 {
+
+}
+
+h3 {
+
+}
+
+h4 {
+
+}
+
+h5 {
+
+}
+
+h6 {
+
+}
+
+ul {
+
+    li {
+
+    }
+
+}
+
+a {
+
+    &:active {
+
+    }
+
+    &:hover {
+
+    }
+
+    &:active {
+
+    }
+
+}
+
+img {
+
+}
+
+
+
+/*-----------------*/
+/*     Header      */
+/*-----------------*/
+
+header {
+
+    nav {
+
+    }
+
+}
+
+/*-----------------*/
+/*-----------------*/
+
+
+
+/*----------------*/
+/*    Content     */
+/*----------------*/
+
+main {
+
+}
+
+/*----------------*/
+/*----------------*/
+
+
+
+/*----------------*/
+/*    Footer      */
+/*----------------*/
+
+footer {
+
+}
+
+/*----------------*/
+/*----------------*/
+
+
+"""
+
 
 # SETTINGS
 scss = False
@@ -201,6 +316,10 @@ platform = platform.system()
 # Disable GUI from tkinter
 gui = tk.Tk()
 gui.withdraw()
+
+# Clear window
+os.system('cls' if os.name == 'nt' else 'clear')
+
 # Select working directory
 print('\nSelect where to create project...')
 print('(A new directory will be'),
@@ -208,12 +327,12 @@ print('created with your project name in next step)')
 gui.update()
 working_directory = fd.askdirectory()
 
-# ABORT OPERATION IF NO PATH SELECTED
-if working_directory == '':
-    sys.exit('No path provided.')
-
 # Clear window
 os.system('cls' if os.name == 'nt' else 'clear')
+
+# ABORT OPERATION IF NO PATH SELECTED
+if working_directory == '':
+    sys.exit('No path provided, shutting down...')
 
 # CHOOSE PROJECT NAME
 print('\nName your project:')
@@ -221,6 +340,8 @@ project_name = input(textstyle.BOLD)
 while os.path.exists(os.path.join(working_directory, project_name)):
     print(textstyle.END + "\nPath already exists.\n")
     project_name = input(textstyle.BOLD)
+
+html_header = html_header.format(project_name)
 
 print(textstyle.END)
 print(
@@ -325,11 +446,14 @@ def createFiles(type, scss, bootstrap):
         # SCSS files
         print("style.scss")
         scss = open(os.path.join("css", "style.scss"), "w")
-        scss.write("@import 'variables.scss'")
+        scss.write(scss_code)
         scss.close()
-        print("variables.scss" + textstyle.END)
-        scss = open(os.path.join("css", "variables.scss"), "w")
+        print("_variables.scss")
+        scss = open(os.path.join("css", "_variables.scss"), "w")
         scss.close()
+        scss = open(os.path.join("css", "_mixins.scss"), "w")
+        scss.close()
+        print("_mixins.scss" + textstyle.END)
     else:
         # CSS files
         print("style.css" + textstyle.END)
@@ -393,19 +517,32 @@ def createFiles(type, scss, bootstrap):
 
             # Check non standard modules
             for module in non_standard_modules:
-                try:
-                    if imp.find_module(module):
-                        __import__(
-                            module, globals(), locals(), fromlist=[], level=-1)
-                except ImportError:
-                    print("\nMissing module\t" + module)
+                if imp.util.find_spec(module):
+                    __import__(
+                        module, globals(), locals(), fromlist=[], level=0)
+                else:
+                    print(
+                        "\nMissing module: " + textstyle.BOLD + module
+                        + textstyle.END)
+                    print(
+                        "Some python packages needs to be installed for"
+                        " the script to work, do you accept?")
+                    while True:
+                        install_packages_input = input(
+                            "(" + textstyle.BOLD + "y" + textstyle.END + "/" +
+                            textstyle.BOLD + "n" + textstyle.END + ")?\t"
+                        )
+                        if install_packages_input == "y":
+                            break
+                        if scss_input == "n":
+                            sys.exit("Shutting down...")
                     print(
                         "\nDownloading "
                         + textstyle.BOLD + module + textstyle.END + "...")
                     subprocess.call(
-                        "python -m pip install " + module, shell=True)
+                        "python3 -m pip install " + module, shell=True)
                     __import__(
-                        module, globals(), locals(), fromlist=[], level=-1)
+                        module, globals(), locals(), fromlist=[], level=0)
 
             bootstrap_url = (
                 "https://api.github.com/repos/twbs/bootstrap/releases/latest"
@@ -418,7 +555,6 @@ def createFiles(type, scss, bootstrap):
                         source_code_url, stream=True, timeout=5
                     )
                 )
-            fileSize = file.headers['content-length']
 
             # Download and Write file
             filename = 'bootstrap_source.zip'
@@ -426,11 +562,10 @@ def createFiles(type, scss, bootstrap):
                 data = 0
                 for chunk in file.iter_content(chunk_size=1024*10):
                     print(
+                            '> ',
                             textstyle.BOLD +
-                            '\nFetching bootstrap:\t' +
-                            textstyle.END + str(data) +
-                            '/' + str(fileSize) + ' bytes', end='\r'
-                        )
+                            'Fetching bootstrap:\t' +
+                            textstyle.END + str(data) + ' bytes', end='\r')
                     f.write(chunk)
                     data += 1024*10
             # Extract SCSS files
@@ -484,7 +619,7 @@ def createFiles(type, scss, bootstrap):
             for elem in textlines:
                 file.write(elem)
             file.close()
-    print("Done!\n")
+    print("\nDone!\n")
     # Opens created project folder
     if "Windows" in platform:
         os.startfile(os.getcwd())
